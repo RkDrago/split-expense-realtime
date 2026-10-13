@@ -16,19 +16,7 @@ export default function SettingsPage() {
     (r) => r === "true"
   );
   const [upiId, setUpiId] = useSetting<string>(settingsKeys.upi, "", (r) => r);
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [saved, setSaved] = useState("");
-
-  function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    const cleanEmail = (email || user?.email || "").trim().toLowerCase();
-    if (!cleanEmail.includes("@")) return;
-    saveUser({ name: (name || user?.name || "").trim(), email: cleanEmail });
-    setSaved("Profile saved");
-    setTimeout(() => setSaved(""), 2000);
-  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -40,40 +28,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <form
-        onSubmit={saveProfile}
-        className="bg-[var(--panel)] border rounded-xl p-5 space-y-4"
-      >
-        <h2 className="font-medium">Profile</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs text-[var(--muted)]">Name</label>
-            <input
-              className="w-full bg-[var(--panel-2)] border rounded-md px-3 py-2 text-sm"
-              placeholder="Your name"
-              defaultValue={ready ? user?.name ?? "" : ""}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs text-[var(--muted)]">Email (your id)</label>
-            <input
-              type="email"
-              className="w-full bg-[var(--panel-2)] border rounded-md px-3 py-2 text-sm"
-              placeholder="you@example.com"
-              defaultValue={ready ? user?.email ?? "" : ""}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          className="bg-[var(--accent)] text-black font-medium rounded-md px-4 py-2 text-sm hover:opacity-90"
-        >
-          Save profile
-        </button>
-        {saved && <p className="text-xs text-[var(--accent-2)]">{saved}</p>}
-      </form>
+      <ProfileForm key={user?.email ?? "anonymous"} ready={ready} user={user} />
 
       <div className="bg-[var(--panel)] border rounded-xl p-5 space-y-4">
         <h2 className="font-medium">Preferences</h2>
@@ -130,5 +85,84 @@ export default function SettingsPage() {
         {saved && <p className="text-xs text-[var(--accent-2)]">{saved}</p>}
       </div>
     </div>
+  );
+}
+
+function ProfileForm({
+  ready,
+  user,
+}: {
+  ready: boolean;
+  user: ReturnType<typeof useUser>["user"];
+}) {
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.includes("@")) {
+      setError("Enter a valid email address.");
+      setMessage("");
+      return;
+    }
+    const saved = saveUser({
+      name: name.trim() || cleanEmail.split("@")[0],
+      email: cleanEmail,
+    });
+    if (!saved) {
+      setError("Could not save profile in this browser. Enable site storage and try again.");
+      setMessage("");
+      return;
+    }
+    setError("");
+    setMessage("Profile saved");
+  }
+
+  return (
+    <form
+      onSubmit={saveProfile}
+      className="bg-[var(--panel)] border rounded-xl p-5 space-y-4"
+    >
+      <h2 className="font-medium">Profile</h2>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-xs text-[var(--muted)]" htmlFor="profile-name">
+            Name
+          </label>
+          <input
+            id="profile-name"
+            className="w-full bg-[var(--panel-2)] border rounded-md px-3 py-2 text-sm"
+            placeholder="Your name"
+            value={ready ? name : ""}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs text-[var(--muted)]" htmlFor="profile-email">
+            Email (your id)
+          </label>
+          <input
+            id="profile-email"
+            type="email"
+            required
+            className="w-full bg-[var(--panel-2)] border rounded-md px-3 py-2 text-sm"
+            placeholder="you@example.com"
+            value={ready ? email : ""}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+      </div>
+      <button
+        type="submit"
+        className="bg-[var(--accent)] text-black font-medium rounded-md px-4 py-2 text-sm hover:opacity-90"
+      >
+        Save profile
+      </button>
+      {error && <p className="text-xs text-[var(--danger)]">{error}</p>}
+      {message && <p className="text-xs text-[var(--accent-2)]">{message}</p>}
+    </form>
   );
 }

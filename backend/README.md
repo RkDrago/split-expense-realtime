@@ -22,3 +22,9 @@ Health endpoints:
 Socket clients join a group with `join(groupId)`. The server verifies that the
 group exists before placing the client in its room. Expense and settlement
 changes emit both a resource-specific event and `group:{id}:updated`.
+
+To create five repeatable demo groups and expenses:
+
+```bash
+npm run seed:demo
+```

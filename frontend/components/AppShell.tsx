@@ -18,6 +18,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [identityError, setIdentityError] = useState("");
 
   // prompt automatically until an identity is saved
   const askOpen = manualOpen || (ready && !user);
@@ -25,9 +26,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
   function saveIdentity(e: React.FormEvent) {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail.includes("@")) return;
+    if (!cleanEmail.includes("@")) {
+      setIdentityError("Enter a valid email address.");
+      return;
+    }
     const u: LocalUser = { name: name.trim() || shortName(cleanEmail), email: cleanEmail };
-    saveUser(u);
+    if (!saveUser(u)) {
+      setIdentityError("Could not save identity in this browser. Enable site storage and try again.");
+      return;
+    }
+    setIdentityError("");
     setManualOpen(false);
   }
 
@@ -60,7 +68,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-3">
             {ready && user ? (
               <button
-                onClick={() => setManualOpen(true)}
+                onClick={() => {
+                  setName(user.name);
+                  setEmail(user.email);
+                  setIdentityError("");
+                  setManualOpen(true);
+                }}
                 className="text-xs px-2.5 py-1 rounded-full border text-[var(--muted)] hover:text-white"
                 title="Change identity"
               >
@@ -111,6 +124,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             >
               Continue
             </button>
+            {identityError && (
+              <p className="text-xs text-[var(--danger)]">{identityError}</p>
+            )}
             {user && (
               <button
                 type="button"

@@ -9,7 +9,7 @@ import { useUser, shortName } from "@/lib/user";
 export default function GroupsPage() {
   const { userId, user, ready } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // create form
@@ -32,7 +32,8 @@ export default function GroupsPage() {
   }, [userId]);
 
   useEffect(() => {
-    if (!ready || !userId) return;
+    if (!ready) return;
+    if (!userId) return;
     let active = true;
     listGroups(userId)
       .then((list) => {
@@ -62,7 +63,11 @@ export default function GroupsPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !userId) return;
+    if (!name.trim()) return;
+    if (!userId) {
+      setError("Set your identity email in the dialog before creating a group.");
+      return;
+    }
     setCreating(true);
     setError("");
     try {
@@ -264,6 +269,7 @@ function CopyInvite({ code }: { code: string }) {
         } catch {
           /* clipboard unavailable */
         }
+
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}

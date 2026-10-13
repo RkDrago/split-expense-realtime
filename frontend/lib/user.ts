@@ -40,13 +40,14 @@ function subscribeKey(key: string, cb: () => void): () => void {
   };
 }
 
-function writeKey(key: string, value: string) {
+function writeKey(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
   } catch {
-    /* storage unavailable */
+    return false;
   }
   window.dispatchEvent(new Event(key));
+  return true;
 }
 
 export function readUser(): LocalUser | null {
@@ -59,8 +60,8 @@ export function readUser(): LocalUser | null {
   }
 }
 
-export function saveUser(user: LocalUser) {
-  writeKey(USER_KEY, JSON.stringify(user));
+export function saveUser(user: LocalUser): boolean {
+  return writeKey(USER_KEY, JSON.stringify(user));
 }
 
 function useStored(key: string): string | null {
