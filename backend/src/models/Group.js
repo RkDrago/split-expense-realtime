@@ -4,9 +4,9 @@ const groupSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     type: { type: String, enum: ["trip", "flat"], default: "trip" },
-    members: [{ type: String, trim: true }], // member emails (userId)
+    members: [{ type: String, trim: true, lowercase: true }],
     createdBy: { type: String, trim: true },
-    inviteCode: { type: String, unique: true, index: true },
+    inviteCode: { type: String, required: true, unique: true, index: true },
   },
   { timestamps: true }
 );

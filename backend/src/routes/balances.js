@@ -2,10 +2,9 @@ const express = require("express");
 const Settlement = require("../models/Settlement");
 const Expense = require("../models/Expense");
 const Group = require("../models/Group");
+const { isObjectId, round2 } = require("../lib/validation");
 
 const router = express.Router();
-
-const round2 = (n) => Math.round(n * 100) / 100;
 
 // Net balance per member: + means is owed money, - means owes
 async function calcBalances(groupId) {
@@ -67,6 +66,8 @@ function simplify(net) {
 // GET /api/balances/:groupId -> simplified debts who owes whom
 router.get("/:groupId", async (req, res) => {
   try {
+    if (!isObjectId(req.params.groupId))
+      return res.status(400).json({ error: "Invalid group id" });
     const { group, net } = await calcBalances(req.params.groupId);
     res.json({ group, balances: net, transfers: simplify(net) });
   } catch (err) {

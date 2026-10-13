@@ -1,6 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const Group = require("../models/Group");
+const { isObjectId, normalizeEmail } = require("../lib/validation");
 
 const router = express.Router();
 
@@ -11,12 +12,16 @@ router.post("/create", async (req, res) => {
     if (!name || !name.trim())
       return res.status(400).json({ error: "Name is required" });
 
+    const creator = createdBy ? normalizeEmail(createdBy) : null;
+    if (createdBy && !creator)
+      return res.status(400).json({ error: "createdBy must be a valid email" });
+    const requestedMembers = Array.isArray(members) ? members : [];
     const cleaned = [
       ...new Set(
-        members
-          .map((m) => String(m).trim().toLowerCase())
+        requestedMembers
+          .map(normalizeEmail)
           .filter(Boolean)
-          .concat(createdBy ? [createdBy.toLowerCase()] : [])
+          .concat(creator ? [creator] : [])
       ),
     ];
 
@@ -25,7 +30,7 @@ router.post("/create", async (req, res) => {
       name: name.trim(),
       type: type === "flat" ? "flat" : "trip",
       members: cleaned,
-      createdBy: createdBy || cleaned[0] || "",
+      createdBy: creator || cleaned[0] || "",
       inviteCode,
     });
     res.status(201).json(group);
@@ -51,6 +56,8 @@ router.get("/list", async (req, res) => {
 // GET /api/groups/:id
 router.get("/:id", async (req, res) => {
   try {
+    if (!isObjectId(req.params.id))
+      return res.status(400).json({ error: "Invalid group id" });
     const group = await Group.findById(req.params.id);
     if (!group) return res.status(404).json({ error: "Group not found" });
     res.json(group);
@@ -69,7 +76,8 @@ router.post("/join", async (req, res) => {
         .json({ error: "inviteCode and userId are required" });
     const group = await Group.findOne({ inviteCode: String(inviteCode) });
     if (!group) return res.status(404).json({ error: "Invalid invite code" });
-    const email = String(userId).toLowerCase();
+    const email = normalizeEmail(userId);
+    if (!email) return res.status(400).json({ error: "userId must be a valid email" });
     if (!group.members.includes(email)) {
       group.members.push(email);
       await group.save();

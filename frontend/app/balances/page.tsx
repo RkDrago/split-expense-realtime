@@ -17,6 +17,7 @@ import {
   upiLink,
   useUser,
 } from "@/lib/user";
+import { getSocket, joinGroupRoom } from "@/lib/socket";
 
 function BalancesInner() {
   const searchParams = useSearchParams();
@@ -78,6 +79,22 @@ function BalancesInner() {
       });
     return () => {
       active = false;
+    };
+  }, [activeGroupId]);
+
+  useEffect(() => {
+    if (!activeGroupId) return;
+    const leave = joinGroupRoom(activeGroupId);
+    const socket = getSocket();
+    const refresh = () => {
+      getBalances(activeGroupId)
+        .then(setData)
+        .catch((err) => setError(apiError(err)));
+    };
+    socket.on(`group:${activeGroupId}:updated`, refresh);
+    return () => {
+      socket.off(`group:${activeGroupId}:updated`, refresh);
+      leave();
     };
   }, [activeGroupId]);
 
